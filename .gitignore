@@ -1,6 +1,33 @@
-venv/
+# Python
 __pycache__/
 *.pyc
-.env
+
+# Virtual environments
+venv/
+*.env
+
+# Database files
+*.db
+
+# Logs
 *.log
+
+# Docker
+*.pid
+*.tar
+
+# Pytest cache
+.pytest_cache/
+
+# Migrations
+migrations/
+
+# IDE files
+.vscode/
 .idea/
+
+# Flask secrets
+instance/
+
+# Environment variables
+.env
