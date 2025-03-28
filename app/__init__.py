@@ -1,14 +1,20 @@
 from flask import Flask
-from .database import db
-from .routes import api
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
+from .config import Config
+
+db = SQLAlchemy()
+migrate = Migrate()
 
 
 def create_app():
     app = Flask(__name__)
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///meals.db'
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.config.from_object(Config)
 
     db.init_app(app)
-    app.register_blueprint(api)
+    migrate.init_app(app, db)
+
+    from .routes.meals import meals_bp
+    app.register_blueprint(meals_bp)
 
     return app

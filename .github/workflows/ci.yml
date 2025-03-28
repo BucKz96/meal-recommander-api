@@ -1,0 +1,24 @@
+name: CI Pipeline
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.9'
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+        pip install pytest
+    - name: Run tests
+      run: pytest tests/
+    - name: Lint code
+      run: |
+        pip install flake8
+        flake8 app
