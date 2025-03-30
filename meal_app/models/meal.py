@@ -1,4 +1,4 @@
-from .. import db
+from meal_app import db
 
 
 class Meal(db.Model):
