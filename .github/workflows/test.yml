@@ -7,7 +7,7 @@ on:
       - dev
       - feature-*
       - ci/*
-      - test/*
+      - tests/*
   pull_request:
 
 jobs:
