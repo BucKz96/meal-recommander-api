@@ -4,8 +4,7 @@ from meal_app import db
 import os
 import csv
 
-ALLOWED_CSV_DIR = "/data"
-
+ALLOWED_CSV_DIR = os.path.join(os.getcwd(), 'data')
 meals_bp = Blueprint('meals', __name__)
 
 
