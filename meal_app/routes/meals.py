@@ -31,6 +31,15 @@ def add_meal():
         return jsonify({"error": str(e)}), 500
 
 
+@meals_bp.route('/meals/<int:meal_id>', methods=['GET'])
+def get_meal(meal_id):
+    meal = Meal.query.get(meal_id)
+    if not meal:
+        return jsonify({"error": "Meal not found"}), 404
+
+    return jsonify({'id': meal.id, 'name': meal.name, 'description': meal.description, 'ingredients': meal.ingredients})
+
+
 @meals_bp.route('/meals/import_csv', methods=['POST'])
 def import_csv():
     data = request.get_json()
