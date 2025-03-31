@@ -7,7 +7,7 @@ import os
 def app():
     app = create_app()
     db_url = os.environ.get("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/meals")
-    print("✅ DATABASE_URL used:", db_url)
+    print("DATABASE_URL used:", db_url)
     app.config.update({
         "TESTING": True,
         "SQLALCHEMY_DATABASE_URI": db_url,
