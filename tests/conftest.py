@@ -1,15 +1,15 @@
 import pytest
 from meal_app import create_app, db as _db
-from flask import Flask
-from sqlalchemy import text
+import os
 
 
 @pytest.fixture(scope='session')
 def app():
     app = create_app()
+    db_url = os.environ.get("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/test_mealdb")
     app.config.update({
         "TESTING": True,
-        "SQLALCHEMY_DATABASE_URI": "postgresql://postgres:postgres@localhost:5432/test_mealdb",
+        "SQLALCHEMY_DATABASE_URI": db_url,
         "SQLALCHEMY_TRACK_MODIFICATIONS": False
     })
 
@@ -19,7 +19,6 @@ def app():
 
     yield app
 
-    # Clean up
     with app.app_context():
         _db.session.remove()
         _db.drop_all()
