@@ -15,7 +15,7 @@ jobs:
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: test_mealdb
+          POSTGRES_DB: meals
         ports:
           - 5432:5432
         options: >-
@@ -25,7 +25,7 @@ jobs:
           --health-retries 5
 
     env:
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_mealdb
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/meals
 
     steps:
       - uses: actions/checkout@v3

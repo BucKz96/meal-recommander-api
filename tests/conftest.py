@@ -6,7 +6,7 @@ import os
 @pytest.fixture(scope='session')
 def app():
     app = create_app()
-    db_url = os.environ.get("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/test_mealdb")
+    db_url = os.environ.get("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/meals")
     print("✅ DATABASE_URL used:", db_url)
     app.config.update({
         "TESTING": True,
