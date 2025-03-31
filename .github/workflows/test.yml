@@ -25,7 +25,7 @@ jobs:
           --health-retries 5
 
     env:
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/meals
+      DATABASE_URI: postgresql://postgres:postgres@localhost:5432/meals
 
     steps:
       - uses: actions/checkout@v3
