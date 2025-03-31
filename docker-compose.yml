@@ -23,8 +23,9 @@ services:
     environment:
       - FLASK_APP=run
       - FLASK_ENV=development
+      - FLASK_DEBUG=1
       - DATABASE_URI=postgresql://user:password@db:5432/meals
-      - PYTHONPATH=/meal_app
+      - PYTHONPATH=/app
     volumes:
       - ./meal_app:/meal_app
       - ./data:/data
