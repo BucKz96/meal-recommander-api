@@ -87,22 +87,115 @@ The API will be available at: `http://localhost:5000`
 ### `GET /meals`
 Returns a list of all meals.
 
+**Example Request:**
+```http
+GET /meals HTTP/1.1
+Host: localhost:5000
+```
+
+**Example Response:**
+```json
+[
+  {
+    "id": 1,
+    "name": "Spaghetti Bolognese",
+    "description": "Classic Italian pasta dish with meat sauce",
+    "ingredients": ["pasta", "beef", "tomato"]
+  },
+  {
+    "id": 2,
+    "name": "Caesar Salad",
+    "description": "Salad with romaine lettuce, croutons, and Caesar dressing",
+    "ingredients": ["lettuce", "croutons", "parmesan"]
+  }
+]
+```
+
+---
+
 ### `GET /meals/<id>`
 Returns a specific meal by ID.
 
-### `POST /meals`
-Adds a new meal. Expects a JSON payload with the following fields:
+**Example Request:**
+```http
+GET /meals/1 HTTP/1.1
+Host: localhost:5000
+```
 
+**Example Response:**
 ```json
 {
+  "id": 1,
   "name": "Spaghetti Bolognese",
   "description": "Classic Italian pasta dish with meat sauce",
   "ingredients": ["pasta", "beef", "tomato"]
 }
 ```
 
+---
+
+### `POST /meals`
+Adds a new meal. Expects a JSON payload with the following fields:
+
+```json
+{
+  "name": "Veggie Curry",
+  "description": "Spicy vegetable curry with coconut milk",
+  "ingredients": ["potato", "carrot", "coconut milk"]
+}
+```
+
+**Response:**
+```json
+{
+  "message": "Meal created successfully",
+  "id": 3
+}
+```
+
+---
+
 ### `POST /meals/import_csv`
 Bulk import meals from a CSV file (`meals.csv` located in `/data`).
+
+**Response:**
+```json
+{
+  "message": "20 meals imported successfully"
+}
+```
+
+---
+
+## Future Endpoint (Planned)
+
+### `POST /recommend`
+Returns a list of meals based on available ingredients.
+
+**Example Request:**
+```json
+{
+  "ingredients": ["pasta", "tomato", "cheese"]
+}
+```
+
+**Expected Response:**
+```json
+{
+  "recommended_meals": [
+    {
+      "id": 4,
+      "name": "Tomato Pasta Bake",
+      "match_score": 0.85
+    },
+    {
+      "id": 5,
+      "name": "Cheesy Lasagna",
+      "match_score": 0.78
+    }
+  ]
+}
+```
 
 ---
 
@@ -153,4 +246,3 @@ GitHub Actions is configured to run tests on every push to `main`, `dev`, and fe
 ## License
 
 This project is licensed under the MIT License.
-
