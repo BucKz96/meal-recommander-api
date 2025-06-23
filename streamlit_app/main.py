@@ -1,5 +1,8 @@
 import streamlit as st
 import requests
+import os
+
+API_URL = os.getenv("API_URL", "http://localhost:8000")
 
 st.set_page_config(page_title="Recommandation de repas", layout="wide")
 
@@ -12,7 +15,7 @@ user_ingredients = st.text_input("Ingrédients disponibles (séparés par des vi
 if st.button("Recommander"):
     ingredients_list = [i.strip() for i in user_ingredients.split(",") if i.strip()]
     try:
-        response = requests.get("http://localhost:8000/meals/by-ingredients", params={"available_ingredients": ingredients_list})
+        response = requests.get(f"{API_URL}/meals/by-ingredients", params={"available_ingredients": ingredients_list})
         response.raise_for_status()
         meals = response.json()
 
