@@ -33,3 +33,5 @@ instance/
 .env
 
 .DS_Store
+
+app/data/*
