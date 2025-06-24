@@ -34,4 +34,4 @@ instance/
 
 .DS_Store
 
-app/data/*
+app/data/*app/data/recipe.csv
