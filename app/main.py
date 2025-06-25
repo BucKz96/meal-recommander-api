@@ -11,3 +11,12 @@ def get_meals_by_ingredients(
 ):
     meals = recommend_meals(available_ingredients)
     return [meal.dict() for meal in meals]
+
+
+@app.get("/meals/all")
+def get_all_meals(cuisine: str | None = Query(None, description="Filter by type")):
+    meals = load_meals()
+    if cuisine:
+        cuisine = cuisine.strip().lower()
+        meals = [m for m in meals if m.cuisine.lower() == cuisine]
+    return [meal.dict() for meal in meals]
