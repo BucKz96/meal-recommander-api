@@ -7,6 +7,10 @@ services:
       dockerfile: docker/api/Dockerfile
     ports:
       - "8000:8000"
+    volumes:
+      - ./app:/app/app  # ← le dossier app local est monté dans /app/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
 
   streamlit:
     build:
@@ -14,6 +18,8 @@ services:
       dockerfile: docker/streamlit/Dockerfile
     ports:
       - "8501:8501"
+    volumes:
+      - ./streamlit_app:/app/streamlit_app  # <-- live reload du code frontend
     depends_on:
       - api
     environment:

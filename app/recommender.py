@@ -1,80 +1,85 @@
 import pandas as pd
-import ast
-from .models import Meal
 from pathlib import Path
+from .models import Meal
+import ast
 
-DATA_PATH = Path(__file__).parent / "data" / "recipe.csv"
+DATA_PATH = Path(__file__).parent / "data" / "recipes_clean.csv"
 
-def safe_parse_ingredients(val):
+def parse_ingredients(val):
     if isinstance(val, list):
-        return [i.strip().lower() for i in val if isinstance(i, str)]
+        return [i.strip().lower() for i in val]
+    if isinstance(val, str):
+        return [i.strip().lower() for i in val.split(",") if i.strip()]
+    return []
 
+def parse_nutritions(val):
     try:
-        # list ou dict
-        parsed = ast.literal_eval(val)
-        if isinstance(parsed, list):
-            return [i.strip().lower() for i in parsed if isinstance(i, str)]
-    except (ValueError, SyntaxError):
-        pass
+        if isinstance(val, str):
+            nutrition = ast.literal_eval(val)
+        elif isinstance(val, dict):
+            nutrition = val
+        else:
+            return {}
 
-    # Fallback if not object Python valid
-    cleaned = val.replace("\n", " ").replace("#", "").replace("^", ",")
-    return [i.strip().lower() for i in cleaned.split(",") if i.strip()]
-
-
-
-def extract_calories(val):
-    try:
-        data = ast.literal_eval(val)
-        return int(float(data.get("amount", 0)))
+        # Nettoyage des valeurs numériques
+        clean_nutrition = {}
+        for k in ["calories", "protein", "fat", "carbohydrates", "sugars", "fiber"]:
+            try:
+                clean_nutrition[k] = round(float(nutrition.get(k, 0)), 2)
+            except:
+                clean_nutrition[k] = 0.0
+        return clean_nutrition
     except Exception:
-        return 0
-
+        return {}
 
 def load_meals() -> list[Meal]:
     df = pd.read_csv(DATA_PATH)
 
-    # Nettoyage & transformation
-    df["ingredients"] = df["ingredients"].apply(safe_parse_ingredients)
-    df["name"] = df["recipe_name"].fillna("Unnamed Recipe")
-    df["cuisine"] = df["tags"].apply(lambda x: x.split(",")[0].strip() if isinstance(x, str) and "," in x else x if isinstance(x, str) else "")
-    if "calories" in df.columns:
-        df["calories"] = df["calories"].apply(extract_calories).fillna(0).astype(int)
-    else:
-        df["calories"] = 0
+    # Nom et ingrédients
+    df["name"] = df["name"].fillna("Unnamed Recipe")
+    df["ingredients"] = df["ingredients"].apply(parse_ingredients)
 
-    ## ingredients=['all-purpose flour^salt^baking soda^baking powder^ground cinnamon^eggs^vegetable oil
-    # ^white sugar^vanilla extract^grated zucchini^chopped walnuts']
+    # Nutrition (dict nettoyé)
+    df["nutritions"] = df["nutritions"].apply(parse_nutritions)
 
+    # Cuisine = premier tag s’il existe
+    df["cuisine"] = df.get("tags", "").apply(
+        lambda x: x.split(",")[0].strip() if isinstance(x, str) and "," in x else (x.strip() if isinstance(x, str) else "")
+    )
+    df["prep_time"] = df["prep_time"].astype(str).str.replace('-', ' ')
+
+    # Colonnes additionnelles : fallback safe
+    for col in ["prep_time", "diet_type", "dish_type", "seasonal", "image_url"]:
+        df[col] = df.get(col, "").fillna("")
+
+    # Construction des objets Meal
     meals = [
         Meal(
             name=row["name"],
-            ingredients=[i.strip().lower() for i in row["ingredients"]],
-            calories=row["calories"],
-            cuisine=row["cuisine"]
+            ingredients=row["ingredients"],
+            cuisine=row["cuisine"],
+            image=row["image_url"],
+            prep_time=row["prep_time"],
+            diet_type=row["diet_type"],
+            dish_type=row["dish_type"],
+            seasonal=row["seasonal"],
+            nutritions=row["nutritions"]
         )
         for _, row in df.iterrows()
     ]
-    print(meals[0])
-    return meals
 
+    return meals
 
 def recommend_meals(available_ingredients: list[str]) -> list[Meal]:
     available = {i.strip().lower() for i in available_ingredients}
     meals = load_meals()
 
     scored_meals = []
-
     for meal in meals:
         matched_ingredients = available.intersection(set(meal.ingredients))
         score = len(matched_ingredients)
-
         if score > 0:
             scored_meals.append((score, meal))
 
-    # Tri décroissant sur le score (meilleurs en haut)
     scored_meals.sort(key=lambda x: x[0], reverse=True)
-
-    # Retourne juste les objets Meal triés
     return [meal for _, meal in scored_meals]
-
