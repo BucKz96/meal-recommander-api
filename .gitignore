@@ -34,4 +34,6 @@ instance/
 
 .DS_Store
 
-app/data/*app/data/recipe.csv
+# Ignore all files in app/data except the .gitkeep
+app/data/*
+!app/data/.gitkeep
