@@ -33,3 +33,7 @@ instance/
 .env
 
 .DS_Store
+
+# Ignore all files in app/data except the .gitkeep
+app/data/*
+!app/data/.gitkeep
