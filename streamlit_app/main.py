@@ -8,7 +8,7 @@ API_URL = os.getenv("API_URL", "http://localhost:8000")
 st.set_page_config(
     page_title="Meal Recommender",
     layout="wide",
-    initial_sidebar_state="auto"
+    initial_sidebar_state="expanded"
 )
 
 # --- CSS global ---
@@ -20,7 +20,7 @@ st.markdown("""
         font-family: 'Segoe UI', sans-serif;
     }
 
-    input {
+    input, .stSlider, .stSelectbox, .stTextInput, .stButton button {
         background-color: #ffffff !important;
         color: #000000 !important;
         border: 1px solid #3AA17E !important;
@@ -75,6 +75,20 @@ st.markdown("""
         border-radius: 8px;
         margin-top: 1rem;
     }
+
+    section[data-testid="stSidebar"] > div:first-child {
+        padding: 1rem;
+        background-color: #f5fbf8;
+        border-right: 1px solid #3AA17E;
+        border-radius: 0 10px 10px 0;
+    }
+
+    section[data-testid="stSidebar"] h2 {
+        color: #2e8b6d;
+        font-size: 1.3rem;
+        font-weight: bold;
+        margin-top: 0;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -99,17 +113,14 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
+st.sidebar.title("📊 Meal Filters")
+
 st.subheader("Find the best meals based on the ingredients you already have!")
 st.markdown("Simply enter a list of available ingredients, and we’ll suggest delicious recipes you can make.")
 
 user_ingredients = st.text_input("🍇 Ingredients you have (comma-separated)", "Chicken, Rice, Tomato")
 
-def display_or_unspecified(value):
-    if value in [None, "", 0, "0", "0.0"]:
-        return "Not specified"
-    return str(value)
-
-if st.button("🍎 Find meals"):
+if user_ingredients:
     ingredients_list = [i.strip() for i in user_ingredients.split(",") if i.strip()]
     try:
         response = requests.get(
@@ -119,8 +130,49 @@ if st.button("🍎 Find meals"):
         response.raise_for_status()
         meals = response.json()
 
+        # --- Filtres dynamiques ---
+        if meals:
+            # Calories max
+            calorie_values = [m.get("nutritions", {}).get("calories", 0) for m in meals if isinstance(m.get("nutritions", {}), dict)]
+            max_calories = int(max(calorie_values)) if calorie_values else 1000
+            cal_limit = st.sidebar.slider("🔢 Max calories", 0, max_calories, max_calories, step=50)
+
+            # Prep time
+            prep_times = [int(m.get("prep_time", 0)) for m in meals if str(m.get("prep_time", "")).isdigit()]
+            max_prep = max(prep_times) if prep_times else 60
+            prep_limit = st.sidebar.slider("⏱️ Max prep time (min)", 0, max_prep, max_prep, step=5)
+
+            # Diet type
+            diet_options = sorted({m.get("diet_type", "") for m in meals if m.get("diet_type")})
+            selected_diet = st.sidebar.selectbox("🦪 Diet type", ["All"] + diet_options)
+
+            # Dish type
+            dish_options = sorted({m.get("dish_type", "") for m in meals if m.get("dish_type")})
+            selected_dish = st.sidebar.selectbox("🍽️ Dish type", ["All"] + dish_options)
+
+            # Appliquer les filtres
+            def display_or_unspecified(value):
+                if value in [None, "", 0, "0", "0.0"]:
+                    return "Not specified"
+                return str(value)
+
+            def passes_filters(meal):
+                if isinstance(meal.get("nutritions", {}), dict):
+                    if meal["nutritions"].get("calories", 0) > cal_limit:
+                        return False
+                if str(meal.get("prep_time", "")).isdigit():
+                    if int(meal["prep_time"]) > prep_limit:
+                        return False
+                if selected_diet != "All" and meal.get("diet_type") != selected_diet:
+                    return False
+                if selected_dish != "All" and meal.get("dish_type") != selected_dish:
+                    return False
+                return True
+
+            meals = [m for m in meals if passes_filters(m)]
+
         if not meals:
-            st.warning("⚠️ No meals found for the given ingredients.")
+            st.warning("⚠️ No meals found for the given ingredients and filters.")
         else:
             st.markdown(f"""
                 <div class="meal-count">
@@ -155,18 +207,18 @@ if st.button("🍎 Find meals"):
 
                             card_html = f'''
                             <div class="card">
-                              <div style="text-align: center; font-weight: bold; font-size: 1.5rem; margin-bottom: 0.5rem;">
+                              <div style="text-align: center; font-weight: bold; font-size: 1rem; margin-bottom: 0.5rem;">
                                 {meal.get("name", "Unnamed Meal")}
                               </div>
                               <div style="text-align: center;">
                                 <img src="{image_url}" width="200" height="150"
                                      style="object-fit: cover; border-radius: 8px;" />
                                 <div style="margin-top: 0.5rem;">
-                                  ⏱️ <strong>Time:</strong> {prep_time}
+                                  ⏱️ <strong>Time:</strong> {prep_time} min
                                 </div>
                               </div>
                               <details class="details-wrapper">
-                                <summary>🔹 View recipe details</summary>
+                                <summary>► View recipe details</summary>
                                 <div style="padding-top: 1rem;">
                                     <p>🍲 <strong>Dish type:</strong> {display_or_unspecified(meal.get('dish_type'))}</p>
                                     <p>🦪 <strong>Diet type:</strong> {display_or_unspecified(meal.get('diet_type'))}</p>
