@@ -2,8 +2,23 @@ import pandas as pd
 from pathlib import Path
 from .models import Meal
 import ast
+import os
+import requests
 
-DATA_PATH = Path(__file__).parent / "data" / "recipes_clean.csv"
+DATA_DIR = Path(__file__).parent / "data"
+DATA_PATH = DATA_DIR / "recipes_clean.csv"
+CSV_URL = "https://huggingface.co/spaces/BucKz96/csv_app/resolve/main/recipes_clean.csv"
+
+def download_csv_if_missing():
+    if not DATA_PATH.exists():
+        print("⏬ Downloading dataset...")
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
+        r = requests.get(CSV_URL)
+        r.raise_for_status()
+        DATA_PATH.write_bytes(r.content)
+        print("✅ Dataset downloaded.")
+
+download_csv_if_missing()
 
 def parse_ingredients(val):
     if isinstance(val, list):
