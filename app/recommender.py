@@ -91,7 +91,10 @@ def recommend_meals(available_ingredients: list[str]) -> list[Meal]:
 
     scored_meals = []
     for meal in meals:
-        matched_ingredients = available.intersection(set(meal.ingredients))
+        matched_ingredients = [
+            ing for ing in meal.ingredients
+            if any(user_ing in ing for user_ing in available)
+        ]
         score = len(matched_ingredients)
         if score > 0:
             scored_meals.append((score, meal))
