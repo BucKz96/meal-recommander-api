@@ -70,6 +70,12 @@ def load_meals() -> list[Meal]:
     )
     df["prep_time"] = df["prep_time"].astype(str).str.replace('-', ' ')
 
+    DEFAULT_IMAGE = "https://via.placeholder.com/200?text=No+Image"
+    df["image_url"] = df["image_url"].apply(
+        lambda url: url.replace("http://", "https://") if isinstance(url, str) else DEFAULT_IMAGE
+    )
+    df["image_url"] = df["image_url"].replace("", DEFAULT_IMAGE)
+
     for col in ["prep_time", "diet_type", "dish_type", "seasonal", "image_url"]:
         df[col] = df[col].fillna("")
 
