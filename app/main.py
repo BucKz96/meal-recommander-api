@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Query
 from fastapi.params import Query as FastAPIQuery
 
-from .recommender import recommend_meals
+from .recommender import recommend_meals, load_meals
 
 app = FastAPI()
 
@@ -20,3 +20,10 @@ def get_all_meals(cuisine: str | None = Query(None, description="Filter by type"
         cuisine = cuisine.strip().lower()
         meals = [m for m in meals if m.cuisine.lower() == cuisine]
     return [meal.dict() for meal in meals]
+
+
+# ✅ DEBUG route pour Render : voir si le CSV est chargé
+@app.get("/debug/sample-meals")
+def get_sample_meals():
+    meals = load_meals()
+    return [meal.dict() for meal in meals[:5]]
