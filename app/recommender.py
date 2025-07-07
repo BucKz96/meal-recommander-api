@@ -11,12 +11,15 @@ CSV_URL = "https://huggingface.co/spaces/BucKz96/csv_app/resolve/main/recipes_cl
 
 def download_csv_if_missing():
     if not DATA_PATH.exists():
-        print("⏬ Downloading dataset...")
+        print("\n Downloading dataset...")
         DATA_DIR.mkdir(parents=True, exist_ok=True)
-        r = requests.get(CSV_URL)
-        r.raise_for_status()
-        DATA_PATH.write_bytes(r.content)
-        print("✅ Dataset downloaded.")
+        try:
+            r = requests.get(CSV_URL)
+            r.raise_for_status()
+            DATA_PATH.write_bytes(r.content)
+            print("Dataset downloaded successfully.")
+        except Exception as e:
+            print("Failed to download dataset:", e)
 
 download_csv_if_missing()
 
@@ -36,7 +39,6 @@ def parse_nutritions(val):
         else:
             return {}
 
-        # Nettoyage des valeurs numériques
         clean_nutrition = {}
         for k in ["calories", "protein", "fat", "carbohydrates", "sugars", "fiber"]:
             try:
@@ -48,26 +50,29 @@ def parse_nutritions(val):
         return {}
 
 def load_meals() -> list[Meal]:
-    df = pd.read_csv(DATA_PATH)
+    try:
+        df = pd.read_csv(DATA_PATH)
+    except Exception as e:
+        print("Failed to read CSV:", e)
+        return []
 
-    # Nom et ingrédients
+    # Assure toutes les colonnes requises
+    required_columns = ["name", "ingredients", "nutritions", "tags", "prep_time", "diet_type", "dish_type", "seasonal", "image_url"]
+    for col in required_columns:
+        if col not in df.columns:
+            df[col] = ""
+
     df["name"] = df["name"].fillna("Unnamed Recipe")
     df["ingredients"] = df["ingredients"].apply(parse_ingredients)
-
-    # Nutrition (dict nettoyé)
     df["nutritions"] = df["nutritions"].apply(parse_nutritions)
-
-    # Cuisine = premier tag s’il existe
-    df["cuisine"] = df.get("tags", "").apply(
+    df["cuisine"] = df["tags"].apply(
         lambda x: x.split(",")[0].strip() if isinstance(x, str) and "," in x else (x.strip() if isinstance(x, str) else "")
     )
     df["prep_time"] = df["prep_time"].astype(str).str.replace('-', ' ')
 
-    # Colonnes additionnelles : fallback safe
     for col in ["prep_time", "diet_type", "dish_type", "seasonal", "image_url"]:
-        df[col] = df.get(col, "").fillna("")
+        df[col] = df[col].fillna("")
 
-    # Construction des objets Meal
     meals = [
         Meal(
             name=row["name"],
