@@ -2,6 +2,9 @@
 
 Recommandez facilement des plats en fonction des ingrédients que vous avez à disposition. Ce projet utilise **FastAPI** pour fournir une API performante et **Streamlit** pour une interface utilisateur interactive.
 
+🔗 Démo en ligne : https://meal-recommander-streamlit.onrender.com
+
+
 ---
 
 ## 🚀 Stack technique
