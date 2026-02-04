@@ -1,20 +1,34 @@
 # Meal Recommender API
 
-Meal Recommender API is a FastAPI service and Streamlit client that match available ingredients with curated recipes. The project was built as a personal showcase and is engineered like a production service: strict typing, exhaustive automated tests, Docker images, and a modern user interface with client-side favorites and search history.
+[![CI](https://github.com/BucKz96/meal-recommander-api/actions/workflows/test.yml/badge.svg)](https://github.com/BucKz96/meal-recommander-api/actions/workflows/test.yml)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?logo=docker&logoColor=white)](https://www.docker.com/)
+
+API intelligente de recommandation de repas basée sur les ingrédients disponibles. Backend en FastAPI avec cache mémoire, rate limiting et observabilité intégrée. Interface Streamlit moderne avec thème clair/sombre, favoris et historique de recherche.
+
+<p align="center">
+  <img src="docs/screenshots/demo.gif" alt="Demo" width="800"/>
+</p>
 
 ---
 
-## Highlights
+## ✨ Fonctionnalités
 
-- Incremental fuzzy matching on ingredients with deterministic scoring and nutrition metadata for every recipe
-- Preloading pipeline backed by HuggingFace and TheMealDB, cached in memory with TTL control and rate limiting at the edge
-- Streamlit interface with theme toggle, debounced search form, favorites, and searchable filters (cuisine, name, cap on results)
-- Observability baked in: health/readiness probes, structured logging via structlog, and cache statistics exposed though the API
-- Reproducible toolchain powered by `pyproject.toml`, Ruff, MyPy, pytest, and multi-stage Docker images for the API and Streamlit front-end
+- **Recommandation par ingrédients** - Algorithme de matching intelligent avec scoring de pertinence
+- **Cache mémoire TTL** - Performance optimale sans rechargement CSV à chaque requête
+- **Rate limiting** - Protection API avec SlowAPI (limites configurables)
+- **Interface moderne** - Streamlit avec thème dynamique, animations et responsive design
+- **Favoris & Historique** - Persistance côté client pour une expérience fluide
+- **Health checks** - Endpoints `/health` et `/ready` pour monitoring (Kubernetes, Render)
+- **Documentation auto** - Swagger UI et ReDoc générés automatiquement
+- **Tests automatisés** - Pytest avec 80%+ coverage (unit + integration)
+- **Docker multi-stage** - Images optimisées, non-root user, health checks
 
 ---
 
-## Architecture Overview
+## 🏗️ Architecture
 
 ```mermaid
 graph TB
@@ -22,21 +36,21 @@ graph TB
         ST[Streamlit UI]
     end
 
-    subgraph API Layer
+    subgraph API
         F[FastAPI]
-        MW[Middlewares\n(CORS, Rate Limiting, Logging)]
-        RT[Routes\n/meals • /health • /ready]
+        MW[Middlewares<br/>CORS, Rate Limit, Logging]
+        RT[Routes<br/>/meals /health /ready]
     end
 
     subgraph Core
         CFG[Pydantic Settings]
         LOG[Structlog]
-        CACHE[In-memory Cache]
+        CACHE[In-Memory Cache]
     end
 
     subgraph Services
-        DL[Data Loader\nHuggingFace/TheMealDB]
-        REC[Recommender]
+        DL[Data Loader<br/>HuggingFace / TheMealDB]
+        REC[Recommender Engine]
     end
 
     subgraph Data
@@ -50,64 +64,58 @@ graph TB
 
 ---
 
-## Getting Started
+## 🚀 Démarrage rapide
 
-### Requirements
+### Prérequis
 
 - Python 3.11+
-- Docker (optional) for local orchestration
-- Make is recommended for the provided shortcuts
+- Docker (optionnel)
 
-### Local environment
+### Installation locale
 
 ```bash
 git clone https://github.com/BucKz96/meal-recommander-api.git
 cd meal-recommander-api
 
 python -m venv .venv
-. .venv/bin/activate  # Windows: .venv\Scripts\activate
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -e ".[dev]"
+```
 
-# Run FastAPI
+### Lancement
+
+```bash
+# Terminal 1 - API
 make run-api
 
-# Run Streamlit client in another terminal
+# Terminal 2 - Streamlit
 make run-streamlit
 ```
 
-Configure the service by duplicating `.env.example`:
-
-```bash
-cp .env.example .env
-# Adjust dataset source, cache TTL, or rate limit before starting
-```
+- API: http://localhost:8000
+- Streamlit: http://localhost:8501
+- Swagger: http://localhost:8000/docs
 
 ### Docker Compose
 
 ```bash
 docker-compose up --build
-
-# API:       http://localhost:8000
-# Streamlit: http://localhost:8501
-# Swagger:   http://localhost:8000/docs
 ```
-
-Both images are built with multi-stage Dockerfiles (see `docker/api` and `docker/streamlit`) and run as non-root users.
 
 ---
 
-## API Overview
+## 📡 API Endpoints
 
-| Method | Endpoint | Description |
-| ------ | -------- | ----------- |
-| GET | `/` | Welcome payload with service metadata |
-| GET | `/meals/by-ingredients` | Main recommender endpoint with optional `limit` |
-| GET | `/meals/all` | Raw dataset explorer, filterable by cuisine |
-| GET | `/meals/sample` | Sample payload for demos/tests |
-| GET | `/health` | Health probe exposing cache stats |
-| GET | `/ready` | Readiness probe used by Render/Kubernetes |
+| Méthode | Endpoint | Description |
+|---------|----------|-------------|
+| GET | `/` | Message de bienvenue + métadonnées |
+| GET | `/meals/by-ingredients` | Recommandations par ingrédients |
+| GET | `/meals/all` | Tous les repas (filtre cuisine optionnel) |
+| GET | `/meals/sample` | Échantillon pour démo |
+| GET | `/health` | Health check avec stats cache |
+| GET | `/ready` | Readiness probe |
 
-Example request:
+### Exemple d'utilisation
 
 ```bash
 curl "http://localhost:8000/meals/by-ingredients?available_ingredients=chicken&available_ingredients=rice&limit=10"
@@ -130,86 +138,73 @@ curl "http://localhost:8000/meals/by-ingredients?available_ingredients=chicken&a
 ]
 ```
 
-Swagger UI and ReDoc are automatically available (`/docs` and `/redoc`).
-
 ---
 
-## Streamlit Client
-
-The Streamlit app mirrors the API capabilities and adds client-side niceties:
-
-- Debounced ingredients form with cached responses and API error handling
-- Filters for free-text search, cuisine, and maximum number of cards
-- Details panel with nutrition badge, responsive layout, and inline animations
-- Favorites persisted in session state and a searchable history sidebar so repeated queries are one click away
-- Theme toggle wired to CSS variables used across the UI for a consistent light/dark experience
-
-Launch it locally with `make run-streamlit` or through Docker Compose. The default UI intentionally waits for the first submission to avoid preloading thousands of recipes on load.
-
----
-
-## Quality Gates
+## 🧪 Tests & Qualité
 
 ```bash
-# Linters and typing
-make lint            # Ruff + MyPy
-
-# Formatting
+# Linter + formatage
+make lint
 make format
 
 # Tests
-make test            # Pytest (unit + integration)
-make test-cov        # Pytest with coverage + HTML report
-```
+make test           # Tests rapides
+make test-cov       # Avec couverture HTML
 
-Tests rely on fixtures and extensive mocking to avoid network calls. Coverage stays above 80%, and cache/stateless services are validated through dedicated unit tests.
-
----
-
-## Tech Stack
-
-| Area | Tools |
-| ---- | ----- |
-| API | FastAPI, Pydantic v2, Structlog, SlowAPI |
-| Data | Pandas, Requests, Tenacity (retry/backoff) |
-| Front-end | Streamlit, Plotly for charts, custom CSS |
-| Tooling | Pytest, Ruff, MyPy, Make, Docker, GitHub Actions |
-
----
-
-## Roadmap
-
-- Short term: JWT authentication, persistent favorites, and pagination
-- Mid term: PostgreSQL storage and scheduled data refresh jobs
-- Long term: Collaborative filtering model and weekly meal plans directly in the UI
-
----
-
-## Project Layout
-
-```
-meal-recommander-api/
-├── src/
-│   ├── api/          # FastAPI entrypoint, routes, middlewares
-│   ├── core/         # Config, logging, custom exceptions
-│   ├── models/       # Pydantic schemas
-│   └── services/     # Cache, data loader, recommender
-├── streamlit_app/    # Streamlit UI modules (main, favorites, history, theme)
-├── tests/            # Unit + integration suites
-├── docker/           # API and Streamlit Dockerfiles
-├── data/             # Cached CSV datasets
-├── pyproject.toml    # Dependencies + tooling config
-└── Makefile          # Developer shortcuts
+# Docker
+make docker-build
+make docker-up
 ```
 
 ---
 
-## License
+## 🛠️ Stack technique
 
-Distributed under the MIT License. See [LICENSE](LICENSE) for details.
+| Domaine | Technologies |
+|---------|-------------|
+| API | FastAPI, Pydantic v2, Uvicorn |
+| Sécurité | SlowAPI, CORS middleware |
+| Data | Pandas, NumPy, HuggingFace Datasets |
+| Logging | Structlog (JSON/texte) |
+| Frontend | Streamlit, CSS custom |
+| Tests | Pytest, pytest-cov, Ruff, MyPy |
+| DevOps | Docker multi-stage, GitHub Actions |
 
 ---
 
-## Maintainer
+## 📊 Dataset
 
-**Maxime L.** – [@BucKz96](https://github.com/BucKz96)
+Deux sources de données supportées :
+
+1. **TheMealDB** (défaut) - ~300 recettes avec images
+2. **HuggingFace** - Dataset recipes_clean.csv nettoyé
+
+Configuration via variables d'environnement :
+
+```bash
+DATA_SOURCE=mealdb  # ou 'csv'
+CACHE_TTL_SECONDS=3600
+API_RATE_LIMIT_PER_MINUTE=100
+```
+
+---
+
+## 🗺️ Roadmap
+
+- [ ] Authentification JWT
+- [ ] Base PostgreSQL pour favoris persistants
+- [ ] Pagination des résultats
+- [ ] Filtrage par régime alimentaire (vegan, keto, etc.)
+- [ ] Suggestions "repas de la semaine"
+
+---
+
+## 📄 Licence
+
+MIT License - voir [LICENSE](LICENSE)
+
+---
+
+<p align="center">
+  Développé avec 🍽️ par <a href="https://github.com/BucKz96">@BucKz96</a>
+</p>
