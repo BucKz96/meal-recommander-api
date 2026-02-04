@@ -1,0 +1,84 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+
+# ⚙️ Configuration des hooks exécutés avant chaque commit
+# Installation: make setup-hooks ou pre-commit install
+
+repos:
+  # 🎨 Ruff - Lint et formatage ultra-rapide
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.9.0
+    hooks:
+      # Linting avec auto-fix
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+        files: ^(src|tests)/
+      # Formatage
+      - id: ruff-format
+        files: ^(src|tests)/
+
+  # 🔍 Mypy - Vérification des types
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.14.0
+    hooks:
+      - id: mypy
+        additional_dependencies:
+          - pydantic
+          - pydantic-settings
+          - types-requests
+          - pandas-stubs
+        files: ^src/
+        args: [--ignore-missing-imports]
+
+  # 📄 Vérification des fichiers
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      # Empêche les commits sur main/master (utiliser PR)
+      - id: no-commit-to-branch
+        args: [--branch, main, --branch, master]
+      # Vérifie le YAML
+      - id: check-yaml
+      # Vérifie le TOML
+      - id: check-toml
+      # Vérifie les fichiers vides
+      - id: check-added-large-files
+        args: [--maxkb=1000]
+      # Supprime les espaces en fin de ligne
+      - id: trailing-whitespace
+      # Assure un retour à la ligne final
+      - id: end-of-file-fixer
+      # Vérifie les conflits de merge
+      - id: check-merge-conflict
+      # Vérifie les exécutables
+      - id: check-executables-have-shebangs
+      # Vérifie les JSON
+      - id: check-json
+        files: \.json$
+
+  # 📝 Gitleaks - Détection de secrets
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.22.0
+    hooks:
+      - id: gitleaks
+        name: Detect secrets
+        description: Detects hardcoded secrets using Gitleaks
+
+# ⚙️ Options globales
+default_language_version:
+  python: python3.11
+
+# Fichiers exclus
+exclude: |
+  (?x)^(
+    
+    .venv/|
+    venv/|
+    __pycache__/|
+    \.pytest_cache/|
+    htmlcov/|
+    \.mypy_cache/|
+    data/|
+    \.ipynb_checkpoints/|
+    
+  )

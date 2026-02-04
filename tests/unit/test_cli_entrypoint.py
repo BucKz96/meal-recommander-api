@@ -18,7 +18,7 @@ def test_main_invokes_uvicorn_run() -> None:
 
     with (
         patch("src.api.main.get_settings", return_value=dummy_settings),
-        patch("src.api.main.uvicorn.run") as mock_run,
+        patch("uvicorn.run") as mock_run,
     ):
         api_main.main()
 

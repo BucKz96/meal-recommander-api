@@ -1,10 +1,88 @@
+# ==========================================
+# 🐳 .dockerignore - Exclusions de build
+# ==========================================
+# Réduit la taille du contexte Docker
+# Accélère le build en ignorant fichiers inutiles
+
+# Python
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
-.venv/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+.env
+.venv
 env/
-.DS_Store
-.idea/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
 .vscode/
-*.db
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+docs/
+
+# Tests
+tests/
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.docker/
+
+# Logs
+*.log
+logs/
+
+# Data (optionnel - commenter si besoin du CSV dans l'image)
+# data/*.csv
+# !data/.gitkeep
+
+# Notebooks
+*.ipynb
+.ipynb_checkpoints/
+
+# Environment
+.env*
+!.env.example

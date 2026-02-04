@@ -7,11 +7,12 @@ Configure et lance l'API avec:
 - Configuration centralisée
 """
 
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from typing import Any
 
 from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
-import uvicorn
 
 from src.api.middleware import setup_middlewares
 from src.api.routes import dataset_router, health_router
@@ -24,7 +25,7 @@ logger = get_logger(__name__)
 
 
 @asynccontextmanager
-async def lifespan(_app: FastAPI):
+async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
     """Gestion du cycle de vie de l'application.
 
     Exécuté au démarrage et à l'arrêt de l'app.
@@ -95,7 +96,7 @@ def create_application(settings: Settings | None = None) -> FastAPI:
 
     # Route racine
     @app.get("/", tags=["Racine"])
-    async def root():
+    async def root() -> dict[str, str]:
         """Message de bienvenue avec liens utiles."""
         return {
             "message": f"Bienvenue sur {settings.app_name}",
@@ -111,7 +112,7 @@ def create_application(settings: Settings | None = None) -> FastAPI:
 app = create_application()
 
 
-def custom_openapi():
+def custom_openapi() -> dict[str, Any] | None:
     """Customisation du schéma OpenAPI."""
     if app.openapi_schema:
         return app.openapi_schema
@@ -132,12 +133,11 @@ def custom_openapi():
     return app.openapi_schema
 
 
-app.openapi = custom_openapi
+app.openapi = custom_openapi  # type: ignore[assignment]
 
 
 def main() -> None:
     """Entrypoint console script pour démarrer l'API avec Uvicorn."""
-
     import uvicorn
 
     settings = get_settings()

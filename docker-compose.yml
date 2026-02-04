@@ -1,26 +1,67 @@
+# ==========================================
+# 🐳 Docker Compose - Configuration Dev/Prod
+# ==========================================
+
 version: "3.9"
 
 services:
+  # 🔧 API FastAPI
   api:
     build:
       context: .
       dockerfile: docker/api/Dockerfile
+      target: production  # ou builder pour dev
+    image: meal-recommender-api:latest
+    container_name: meal-api
     ports:
       - "8000:8000"
+    environment:
+      - APP_ENV=production
+      - LOG_LEVEL=INFO
+      - API_RATE_LIMIT_PER_MINUTE=100
+      - CACHE_TTL_SECONDS=3600
     volumes:
-      - ./app:/app/app  # ← le dossier app local est monté dans /app/app
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+      # Données persistantes
+      - ./data:/app/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - meal-network
 
-
+  # 🎨 Streamlit Frontend
   streamlit:
     build:
       context: .
       dockerfile: docker/streamlit/Dockerfile
+    image: meal-recommender-streamlit:latest
+    container_name: meal-streamlit
     ports:
       - "8501:8501"
-    volumes:
-      - ./streamlit_app:/app/streamlit_app  # <-- live reload du code frontend
-    depends_on:
-      - api
     environment:
       - API_URL=http://api:8000
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8501')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+    networks:
+      - meal-network
+
+networks:
+  meal-network:
+    driver: bridge
+
+# Optional: Volumes persistants
+# volumes:
+#   meal-data:
+#     driver: local
