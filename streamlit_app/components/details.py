@@ -1,11 +1,10 @@
 """Composant pour l'affichage du panneau de détails d'un repas."""
 
-from typing import Any
 
 import streamlit as st
 
 from streamlit_app.favorites import favorite_button
-from streamlit_app.utils import fallback_image_url, safe_html_escape, sanitize_image_url
+from streamlit_app.utils import safe_html_escape, sanitize_image_url
 
 
 def render_details_panel() -> None:
@@ -17,21 +16,21 @@ def render_details_panel() -> None:
     meal_name = str(meal.get("name", "Recipe"))
     if not st.session_state.get("selected_meal_name"):
         st.session_state["selected_meal_name"] = meal_name
-    
+
     meal_name_safe = safe_html_escape(meal_name)
     cuisine = safe_html_escape(meal.get("cuisine") or "International")
     dish_type = safe_html_escape(meal.get("dish_type"))
     category_value = safe_html_escape(meal.get("category"))
     diet_type = safe_html_escape(meal.get("diet_type") or "Unspecified")
     prep_time = safe_html_escape(meal.get("prep_time") or "N/A")
-    
+
     ingredients = meal.get("ingredients") or []
     if not isinstance(ingredients, list):
         ingredients = []
 
     image_url = sanitize_image_url(meal.get("image"), meal_name)
     nutritions = meal.get("nutritions") or {}
-    
+
     # Construction des items nutritionnels
     nutrition_items: list[str] = []
     nutrition_schema = [

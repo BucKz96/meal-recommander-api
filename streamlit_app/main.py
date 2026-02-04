@@ -38,7 +38,7 @@ def main() -> None:
         layout="wide",
         initial_sidebar_state="expanded",
     )
-    
+
     # Initialisation
     ensure_state_defaults()
     apply_theme(st.session_state.get("theme", "light"))
@@ -51,10 +51,10 @@ def main() -> None:
         ["Discover", "Favorites"],
         label_visibility="collapsed",
     )
-    
+
     with st.sidebar:
         theme_toggle()
-    
+
     display_history_sidebar()
 
     # Page Favorites
@@ -66,7 +66,7 @@ def main() -> None:
 
     # Page Discover (main)
     render_hero()
-    
+
     # Formulaire de recherche
     ingredients_input, submitted = render_search_form()
 
@@ -76,7 +76,7 @@ def main() -> None:
 
     # Récupération des données
     meals: list[dict[str, Any]] = []
-    
+
     if should_fetch:
         ingredients = tuple(i.strip() for i in ingredients_input.split(",") if i.strip())
 
@@ -87,16 +87,16 @@ def main() -> None:
             try:
                 with st.spinner("Searching for recipes..."):
                     meals = fetch_meals(ingredients, limit=API_FETCH_LIMIT)
-                
+
                 # Mise à jour du state
                 st.session_state["last_ingredients"] = ingredients
                 st.session_state["last_results"] = meals
                 st.session_state["selected_meal"] = None
                 st.session_state["selected_meal_name"] = None
-                
+
                 # Ajout à l'historique
                 add_to_history(list(ingredients), len(meals))
-                
+
             except requests.RequestException as exc:
                 st.error(f"Unable to reach the API: {exc}")
                 meals = st.session_state.get("last_results", [])
@@ -118,7 +118,7 @@ def main() -> None:
 
     # Cartes de repas
     render_meal_cards(filtered_meals)
-    
+
     # Détails du repas sélectionné
     render_details_panel()
 

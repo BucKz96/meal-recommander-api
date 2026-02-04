@@ -202,9 +202,3 @@ API_RATE_LIMIT_PER_MINUTE=100
 ## 📄 Licence
 
 MIT License - voir [LICENSE](LICENSE)
-
----
-
-<p align="center">
-  Développé avec 🍽️ par <a href="https://github.com/BucKz96">@BucKz96</a>
-</p>

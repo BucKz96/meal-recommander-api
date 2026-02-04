@@ -4,11 +4,11 @@ from typing import Any
 
 import streamlit as st
 
-DEFAULT_INGREDIENTS = "Chicken, Rice, Tomato"
+DEFAULT_INGREDIENTS = "poulet, riz, tomate"
 
 
 def render_search_form() -> tuple[str, bool]:
-    """Affiche le formulaire de recherche.
+    """Affiche le formulaire de recherche compact.
     
     Returns:
         Tuple (ingredients_input, submitted)
@@ -16,16 +16,18 @@ def render_search_form() -> tuple[str, bool]:
     with st.form("search_form", clear_on_submit=False):
         st.markdown('<div class="search-section">', unsafe_allow_html=True)
         st.markdown('<div class="search-shell">', unsafe_allow_html=True)
-        
-        ingredients_input = st.text_input(
-            "Ingredients",
-            key="ingredients_input",
-            placeholder=f"Ex: {DEFAULT_INGREDIENTS}",
-            label_visibility="collapsed",
-        )
-        
-        submitted = st.form_submit_button("🔍 Find recipes", use_container_width=True)
-        
+
+        cols = st.columns([5, 2])
+        with cols[0]:
+            ingredients_input = st.text_input(
+                "Ingredients",
+                key="ingredients_input",
+                placeholder="Ex: poulet, riz, tomate...",
+                label_visibility="collapsed",
+            )
+        with cols[1]:
+            submitted = st.form_submit_button("🔍 Rechercher", use_container_width=True)
+
         st.markdown("</div>", unsafe_allow_html=True)
         st.markdown("</div>", unsafe_allow_html=True)
 
@@ -43,7 +45,7 @@ def render_filters(meals: list[dict[str, Any]]) -> tuple[str, str, int]:
     """
     with st.sidebar.expander("Filtres essentiels", expanded=True):
         st.caption("Affinez rapidement les suggestions affichées ci-dessous.")
-        
+
         name_query = st.text_input("🔎 Rechercher dans les résultats", key="filter_name")
 
         # Extraction des cuisines uniques
@@ -53,7 +55,7 @@ def render_filters(meals: list[dict[str, Any]]) -> tuple[str, str, int]:
             if isinstance(cuisine, str) and cuisine
         ]
         cuisine_options: list[str] = sorted(set(cuisine_values))
-        
+
         cuisine = st.selectbox(
             "🌍 Cuisine",
             ["Toutes"] + cuisine_options,
@@ -83,7 +85,7 @@ def filter_meals(
         Liste filtrée et limitée
     """
     filtered: list[dict[str, Any]] = []
-    
+
     for meal in meals:
         name = str(meal.get("name", ""))
         if name_query and name_query not in name.lower():

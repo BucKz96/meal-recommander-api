@@ -65,26 +65,26 @@ def sanitize_image_url(url: Any, fallback_seed: str = "default") -> str:
     """
     if not isinstance(url, str):
         return fallback_image_url(fallback_seed)
-    
+
     url = url.strip()
-    
+
     # Valeurs invalides connues
     if url.lower() in ("nan", "none", "null", ""):
         return fallback_image_url(fallback_seed)
-    
+
     # Domaines bloqués (images qui ne chargent pas)
     blocked_domains = ["media-allrecipes.com"]
     if any(domain in url for domain in blocked_domains):
         return fallback_image_url(fallback_seed)
-    
+
     # Force HTTPS
     if url.startswith("http://"):
         url = url.replace("http://", "https://", 1)
-    
+
     # Vérifie que c'est bien une URL
     if not url.startswith("https://"):
         return fallback_image_url(fallback_seed)
-    
+
     return url
 
 
@@ -100,23 +100,23 @@ def format_ingredients_list(ingredients: Any, max_display: int = 3) -> list[str]
     """
     if not ingredients:
         return []
-    
+
     if isinstance(ingredients, str):
         # Parse string séparée par virgules
         ingredients = [i.strip() for i in ingredients.split(",") if i.strip()]
-    
+
     if not isinstance(ingredients, list):
         return []
-    
+
     result = []
     for i, ing in enumerate(ingredients[:max_display]):
         result.append(safe_html_escape(str(ing)))
-    
+
     # Ajoute le compteur si plus d'ingrédients
     remaining = len(ingredients) - max_display
     if remaining > 0:
         result.append(f"+{remaining} more")
-    
+
     return result
 
 
@@ -133,9 +133,9 @@ def truncate_text(text: Any, max_length: int = 100, suffix: str = "...") -> str:
     """
     if text is None:
         return ""
-    
+
     text_str = str(text)
     if len(text_str) <= max_length:
         return text_str
-    
+
     return text_str[:max_length - len(suffix)] + suffix
