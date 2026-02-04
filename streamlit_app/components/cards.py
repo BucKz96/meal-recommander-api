@@ -4,18 +4,14 @@ from typing import Any
 
 import streamlit as st
 
-from streamlit_app.favorites import favorite_button_compact
+from streamlit_app.favorites import favorite_button_icon
 from streamlit_app.utils import fallback_image_url, safe_html_escape, sanitize_image_url
 
 RESULTS_PER_ROW = 3
 
 
 def render_meal_cards(meals: list[dict[str, Any]]) -> None:
-    """Affiche les cartes de repas dans une grille responsive.
-    
-    Args:
-        meals: Liste des repas à afficher
-    """
+    """Affiche les cartes de repas dans une grille responsive."""
     if not meals:
         st.markdown(
             """
@@ -41,12 +37,7 @@ def render_meal_cards(meals: list[dict[str, Any]]) -> None:
 
 
 def render_meal_card(meal: dict[str, Any], key_suffix: str) -> None:
-    """Affiche une carte de repas individuelle avec boutons intégrés.
-    
-    Args:
-        meal: Données du repas
-        key_suffix: Suffixe unique pour les clés Streamlit
-    """
+    """Affiche une carte de repas avec boutons intégrés dans le footer."""
     meal_name = meal.get("name", "Recipe")
     meal_name_safe = safe_html_escape(meal_name)
     cuisine = meal.get("cuisine", "International")
@@ -64,13 +55,7 @@ def render_meal_card(meal: dict[str, Any], key_suffix: str) -> None:
     if selected_name and selected_name == meal_name:
         card_classes += " meal-card--active"
 
-    meta_parts: list[str] = []
-    if category:
-        meta_parts.append(safe_html_escape(category))
-    if ingredients:
-        meta_parts.append(f"{len(ingredients)} ingr.")
-    meta_html = '<div class="meal-meta">' + " · ".join(meta_parts) + "</div>" if meta_parts else ""
-
+    # Tags ingrédients
     ingredients_html = ""
     if ingredients:
         tags = [
@@ -81,7 +66,15 @@ def render_meal_card(meal: dict[str, Any], key_suffix: str) -> None:
             tags.append(f'<span class="ingredient-tag">+{len(ingredients) - 2}</span>')
         ingredients_html = '<div class="ingredients-list">' + "".join(tags) + "</div>"
 
-    # Structure HTML de la carte
+    # Meta info
+    meta_parts = []
+    if category:
+        meta_parts.append(safe_html_escape(category))
+    if ingredients:
+        meta_parts.append(f"{len(ingredients)} ingr.")
+    meta_html = '<div class="meal-meta">' + " · ".join(meta_parts) + "</div>" if meta_parts else ""
+
+    # Structure HTML complète de la carte
     card_html = f"""
     <div class="meal-card-wrapper">
         <div class="{card_classes}">
@@ -98,29 +91,25 @@ def render_meal_card(meal: dict[str, Any], key_suffix: str) -> None:
     </div>
     """.strip()
 
-    # Container principal pour la carte + boutons
-    with st.container():
-        # Affichage du HTML de la carte
-        st.markdown(card_html, unsafe_allow_html=True)
-
-        # Boutons d'action positionnés en absolu (via CSS)
-        # On utilise une div vide pour créer l'espace, puis les boutons en overlay
-        st.markdown('<div style="height: 0; position: relative;">', unsafe_allow_html=True)
-
-        # Container pour les boutons avec positionnement
-        cols = st.columns([1, 1, 3])  # Deux petites colonnes pour les boutons
-        with cols[0]:
-            # Bouton favoris (étoile)
-            favorite_button_compact(meal, key_suffix=f"fav_{key_suffix}")
-        with cols[1]:
-            # Bouton détails (+)
-            if st.button(
-                "+",
-                key=f"det_{key_suffix}_{meal_name}",
-                help="Voir détails",
-            ):
-                st.session_state["selected_meal"] = meal
-                st.session_state["selected_meal_name"] = meal_name
-                st.rerun()
-
-        st.markdown('</div>', unsafe_allow_html=True)
+    # Affichage de la carte
+    st.markdown(card_html, unsafe_allow_html=True)
+    
+    # Boutons dans une ligne compacte sous la carte mais visuellement attachés
+    # Utilisation de colonnes pour alignement
+    btn_cols = st.columns([1, 1, 3])  # 2 colonnes pour boutons, 1 pour espace
+    
+    with btn_cols[0]:
+        # Bouton favoris (étoile)
+        favorite_button_icon(meal, key_suffix=f"fav_{key_suffix}")
+    
+    with btn_cols[1]:
+        # Bouton détails (+)
+        if st.button(
+            "+",
+            key=f"det_{key_suffix}_{meal_name}",
+            help="Voir détails",
+            use_container_width=True,
+        ):
+            st.session_state["selected_meal"] = meal
+            st.session_state["selected_meal_name"] = meal_name
+            st.rerun()

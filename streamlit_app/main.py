@@ -17,13 +17,13 @@ from streamlit_app.components.layout import (
     render_footer,
     render_hero,
     render_results_header,
+    render_search_form,
 )
 from streamlit_app.favorites import display_favorites
 from streamlit_app.filters import (
     ensure_state_defaults,
     filter_meals,
     render_filters,
-    render_search_form,
 )
 from streamlit_app.history import add_to_history, display_history_sidebar
 from streamlit_app.theme import apply_theme, theme_toggle

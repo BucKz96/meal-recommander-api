@@ -1,8 +1,4 @@
-"""Gestion des favoris avec import/export JSON.
-
-Les favoris sont stockés en session_state et peuvent être
-exportés/importés via JSON pour persistance.
-"""
+"""Gestion des favoris avec import/export JSON."""
 
 import json
 from typing import Any
@@ -23,13 +19,12 @@ def add_to_favorites(meal: dict[str, Any]) -> None:
     """Ajoute une recette aux favoris."""
     favorites = get_favorites()
 
-    # Évite les doublons
     if not any(f.get("name") == meal.get("name") for f in favorites):
         favorites.append(meal)
         st.session_state[FAVORIS_KEY] = favorites
-        st.success(f"⭐ {meal.get('name', 'Recette')} ajoutée aux favoris !")
+        st.toast(f"⭐ {meal.get('name', 'Recette')} ajoutée aux favoris !", icon="⭐")
     else:
-        st.info("Cette recette est déjà dans vos favoris.")
+        st.toast("Déjà dans vos favoris", icon="ℹ️")
 
 
 def remove_from_favorites(meal_name: str | None) -> None:
@@ -37,7 +32,7 @@ def remove_from_favorites(meal_name: str | None) -> None:
     favorites = get_favorites()
     favorites = [f for f in favorites if f.get("name") != meal_name]
     st.session_state[FAVORIS_KEY] = favorites
-    st.success(f"❌ {meal_name} retiré des favoris.")
+    st.toast(f"Retiré des favoris", icon="🗑️")
 
 
 def is_favorite(meal_name: str) -> bool:
@@ -52,35 +47,22 @@ def clear_favorites() -> None:
 
 
 def export_favorites_json() -> str:
-    """Exporte les favoris en JSON.
-    
-    Returns:
-        String JSON des favoris
-    """
+    """Exporte les favoris en JSON."""
     favorites = get_favorites()
     return json.dumps(favorites, indent=2, ensure_ascii=False)
 
 
 def import_favorites_json(json_str: str) -> tuple[bool, str]:
-    """Importe des favoris depuis JSON.
-    
-    Args:
-        json_str: String JSON à importer
-        
-    Returns:
-        Tuple (succès, message)
-    """
+    """Importe des favoris depuis JSON."""
     try:
         data = json.loads(json_str)
         if not isinstance(data, list):
             return False, "Le JSON doit être une liste"
 
-        # Validation basique
         for item in data:
             if not isinstance(item, dict) or "name" not in item:
-                return False, "Format invalide: chaque item doit avoir un 'name'"
+                return False, "Format invalide"
 
-        # Merge avec existants (évite doublons)
         existing = get_favorites()
         existing_names = {f.get("name") for f in existing}
 
@@ -98,33 +80,28 @@ def import_favorites_json(json_str: str) -> tuple[bool, str]:
 
 
 def display_favorites() -> None:
-    """Affiche la page des favoris avec import/export."""
+    """Affiche la page des favoris."""
     favorites = get_favorites()
 
-    # Section import/export
     with st.expander("📁 Importer / Exporter"):
         col1, col2 = st.columns(2)
 
         with col1:
-            st.caption("Exporter vos favoris")
+            st.caption("Exporter")
             if favorites:
                 json_data = export_favorites_json()
                 st.download_button(
-                    "⬇️ Télécharger JSON",
+                    "⬇️ JSON",
                     data=json_data,
-                    file_name="meal_recommender_favorites.json",
+                    file_name="favorites.json",
                     mime="application/json",
                 )
             else:
-                st.button("⬇️ Télécharger JSON", disabled=True)
+                st.button("⬇️ JSON", disabled=True)
 
         with col2:
-            st.caption("Importer des favoris")
-            uploaded = st.file_uploader(
-                "Choisir un fichier JSON",
-                type=["json"],
-                label_visibility="collapsed",
-            )
+            st.caption("Importer")
+            uploaded = st.file_uploader("Choisir", type=["json"], label_visibility="collapsed")
             if uploaded is not None:
                 content = uploaded.read().decode("utf-8")
                 success, msg = import_favorites_json(content)
@@ -136,14 +113,12 @@ def display_favorites() -> None:
 
     st.markdown("---")
 
-    # Liste des favoris
     if not favorites:
-        st.info("Vous n'avez pas encore de favoris. Ajoutez des recettes !")
+        st.info("Vous n'avez pas encore de favoris.")
         return
 
-    st.write(f"**{len(favorites)}** recette(s) sauvegardée(s)")
+    st.write(f"**{len(favorites)}** recette(s)")
 
-    # Bouton tout supprimer
     if st.button("🗑️ Tout supprimer", type="secondary"):
         clear_favorites()
         st.rerun()
@@ -158,7 +133,7 @@ def display_favorites() -> None:
                 st.write(f"**{meal.get('name', 'Sans nom')}**")
 
             with col2:
-                if st.button("👁️ Voir", key=f"view_{meal.get('name')}"):
+                if st.button("👁️", key=f"view_{meal.get('name')}"):
                     st.session_state.selected_meal = meal
                     st.session_state.selected_meal_name = meal.get("name")
                     st.rerun()
@@ -169,13 +144,33 @@ def display_favorites() -> None:
                     st.rerun()
 
 
+def favorite_button_icon(meal: dict[str, Any], key_suffix: str) -> None:
+    """Bouton favoris minimal avec icône étoile."""
+    meal_name = meal.get("name", "")
+    is_fav = is_favorite(meal_name)
+
+    icon = "⭐" if is_fav else "☆"
+    help_text = "Retirer" if is_fav else "Ajouter"
+
+    if st.button(
+        icon,
+        key=f"fav_{key_suffix}_{meal_name}",
+        help=help_text,
+    ):
+        if is_fav:
+            remove_from_favorites(meal_name)
+        else:
+            add_to_favorites(meal)
+        st.rerun()
+
+
 def favorite_button(
     meal: dict[str, Any],
     key_suffix: str = "card",
     *,
     show_label: bool = False,
 ) -> None:
-    """Bouton favoris avec indicateur clair."""
+    """Bouton favoris standard."""
     meal_name = meal.get("name", "")
     is_fav = is_favorite(meal_name)
 
@@ -188,32 +183,6 @@ def favorite_button(
         key=f"fav_btn_{key_suffix}_{meal_name}",
         help=label,
         use_container_width=True,
-    ):
-        if is_fav:
-            remove_from_favorites(meal_name)
-        else:
-            add_to_favorites(meal)
-        st.rerun()
-
-
-def favorite_button_compact(
-    meal: dict[str, Any],
-    key_suffix: str = "card",
-) -> None:
-    """Bouton favoris compact avec juste une étoile.
-    
-    Pour utilisation dans les cartes de repas.
-    """
-    meal_name = meal.get("name", "")
-    is_fav = is_favorite(meal_name)
-
-    icon = "⭐" if is_fav else "☆"
-    help_text = "Retirer des favoris" if is_fav else "Ajouter aux favoris"
-
-    if st.button(
-        icon,
-        key=f"fav_compact_{key_suffix}_{meal_name}",
-        help=help_text,
     ):
         if is_fav:
             remove_from_favorites(meal_name)
