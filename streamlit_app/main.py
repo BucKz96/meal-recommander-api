@@ -23,6 +23,7 @@ from theme import apply_theme, theme_toggle
 
 API_URL = os.getenv("API_URL", "http://localhost:8000")
 RESULTS_PER_ROW = 3
+API_FETCH_LIMIT = 60
 DEFAULT_INGREDIENTS = "Chicken, Rice, Tomato"
 
 
@@ -429,7 +430,7 @@ CUSTOM_CSS = """
 
 
 @st.cache_data(ttl=300, show_spinner=False)
-def fetch_meals(ingredients: tuple[str, ...]) -> list[dict[str, Any]]:
+def fetch_meals(ingredients: tuple[str, ...], limit: int | None = None) -> list[dict[str, Any]]:
     """Query the API once and cache the payload."""
 
     if ingredients:
@@ -438,6 +439,9 @@ def fetch_meals(ingredients: tuple[str, ...]) -> list[dict[str, Any]]:
     else:
         params = []
         url = f"{API_URL}/meals/all"
+
+    if limit is not None:
+        params.append(("limit", str(limit)))
 
     response = requests.get(url, params=params or None, timeout=15)
     response.raise_for_status()
@@ -684,6 +688,7 @@ def ensure_state_defaults() -> None:
     st.session_state.setdefault("selected_meal_name", None)
     st.session_state.setdefault("ingredients_input", DEFAULT_INGREDIENTS)
     st.session_state.setdefault("trigger_history_submit", False)
+    st.session_state.setdefault("filter_limit", 24)
 
 
 def main() -> None:
@@ -740,22 +745,28 @@ def main() -> None:
         st.markdown("</div>", unsafe_allow_html=True)
 
     history_triggered = st.session_state.pop("trigger_history_submit", False)
+    should_fetch = submitted or history_triggered
 
-    if submitted or history_triggered or not st.session_state.get("last_results"):
+    if should_fetch:
         ingredients = tuple(i.strip() for i in ingredients_input.split(",") if i.strip())
-        try:
-            with st.spinner("Searching for recipes..."):
-                meals = fetch_meals(ingredients)
-            st.session_state["last_ingredients"] = ingredients
-            st.session_state["last_results"] = meals
-            st.session_state["selected_meal"] = None
-            st.session_state["selected_meal_name"] = None
-            add_to_history(list(ingredients) or ["Any"], len(meals))
-        except requests.RequestException as exc:
-            st.error(f"Unable to reach the API: {exc}")
-            meals = []
+
+        if not ingredients:
+            st.warning("Ajoute au moins un ingrédient avant de lancer la recherche.")
+            meals = st.session_state.get("last_results", [])
         else:
-            meals = st.session_state["last_results"]
+            try:
+                with st.spinner("Searching for recipes..."):
+                    meals = fetch_meals(ingredients, limit=API_FETCH_LIMIT)
+                st.session_state["last_ingredients"] = ingredients
+                st.session_state["last_results"] = meals
+                st.session_state["selected_meal"] = None
+                st.session_state["selected_meal_name"] = None
+                add_to_history(list(ingredients), len(meals))
+            except requests.RequestException as exc:
+                st.error(f"Unable to reach the API: {exc}")
+                meals = st.session_state.get("last_results", [])
+            else:
+                meals = st.session_state["last_results"]
     else:
         meals = st.session_state["last_results"]
 
