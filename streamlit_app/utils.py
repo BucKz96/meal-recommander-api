@@ -10,10 +10,10 @@ from typing import Any
 
 def safe_html_escape(text: Any) -> str:
     """Échappe le HTML pour éviter les injections XSS.
-    
+
     Args:
         text: Texte à échapper (peut être any type)
-        
+
     Returns:
         Texte échappé safe pour HTML
     """
@@ -24,10 +24,10 @@ def safe_html_escape(text: Any) -> str:
 
 def generate_image_seed(seed_source: str) -> str:
     """Génère un hash pour les images placeholder.
-    
+
     Args:
         seed_source: Source du seed (nom de recette, etc.)
-        
+
     Returns:
         Hash hexadécimal de 12 caractères
     """
@@ -36,12 +36,12 @@ def generate_image_seed(seed_source: str) -> str:
 
 def fallback_image_url(seed_source: str, width: int = 400, height: int = 300) -> str:
     """Génère une URL d'image de fallback.
-    
+
     Args:
         seed_source: Source pour le seed (garantit cohérence)
         width: Largeur de l'image
         height: Hauteur de l'image
-        
+
     Returns:
         URL Picsum Photos avec seed déterministe
     """
@@ -51,50 +51,50 @@ def fallback_image_url(seed_source: str, width: int = 400, height: int = 300) ->
 
 def sanitize_image_url(url: Any, fallback_seed: str = "default") -> str:
     """Nettoie et valide une URL d'image.
-    
+
     - Convertit HTTP en HTTPS
     - Filtre les domaines problématiques
     - Retourne fallback si invalide
-    
+
     Args:
         url: URL à nettoyer
         fallback_seed: Seed pour l'image de remplacement
-        
+
     Returns:
         URL safe ou fallback
     """
     if not isinstance(url, str):
         return fallback_image_url(fallback_seed)
 
-    url = url.strip()
+    url_str: str = url.strip()
 
     # Valeurs invalides connues
-    if url.lower() in ("nan", "none", "null", ""):
+    if url_str.lower() in ("nan", "none", "null", ""):
         return fallback_image_url(fallback_seed)
 
-    # Domaines bloqués (images qui ne chargent pas)
+    # Domaines bloques (images qui ne chargent pas)
     blocked_domains = ["media-allrecipes.com"]
-    if any(domain in url for domain in blocked_domains):
+    if any(domain in url_str for domain in blocked_domains):
         return fallback_image_url(fallback_seed)
 
     # Force HTTPS
-    if url.startswith("http://"):
-        url = url.replace("http://", "https://", 1)
+    if url_str.startswith("http://"):
+        url_str = url_str.replace("http://", "https://", 1)
 
-    # Vérifie que c'est bien une URL
-    if not url.startswith("https://"):
+    # Verifie que c'est bien une URL
+    if not url_str.startswith("https://"):
         return fallback_image_url(fallback_seed)
 
-    return url
+    return url_str
 
 
 def format_ingredients_list(ingredients: Any, max_display: int = 3) -> list[str]:
     """Formate une liste d'ingrédients pour l'affichage.
-    
+
     Args:
         ingredients: Liste d'ingrédients ou string
         max_display: Nombre max à afficher avant "+X more"
-        
+
     Returns:
         Liste formatée pour affichage
     """
@@ -122,12 +122,12 @@ def format_ingredients_list(ingredients: Any, max_display: int = 3) -> list[str]
 
 def truncate_text(text: Any, max_length: int = 100, suffix: str = "...") -> str:
     """Tronque un texte à une longueur maximale.
-    
+
     Args:
         text: Texte à tronquer
         max_length: Longueur maximale
         suffix: Suffixe à ajouter si tronqué
-        
+
     Returns:
         Texte tronqué
     """

@@ -1,60 +1,31 @@
-"""Historique des recherches avec gestion de session.
+"""Historique des recherches."""
 
-L'historique est conservé pendant la session Streamlit
-et peut être effacé manuellement.
-"""
-
-from typing import Any
+from datetime import datetime
 
 import streamlit as st
 
-HISTORY_KEY = "meal_recommender_history"
+HISTORY_KEY = "meal_history"
 MAX_HISTORY = 10
 
 
-def add_to_history(ingredients: list[str], results_count: int) -> None:
-    """Ajoute une recherche à l'historique.
-    
-    Args:
-        ingredients: Liste des ingrédients recherchés
-        results_count: Nombre de résultats trouvés
-    """
+def add_to_history(ingredients: list[str], count: int) -> None:
+    """Ajoute à l'historique."""
     if HISTORY_KEY not in st.session_state:
         st.session_state[HISTORY_KEY] = []
 
-    history = st.session_state[HISTORY_KEY]
-
-    # Crée l'entrée
-    from datetime import datetime
     entry = {
-        "ingredients": ingredients.copy(),
-        "results_count": results_count,
-        "timestamp": datetime.now().strftime("%H:%M"),
-        "date": datetime.now().strftime("%Y-%m-%d"),
+        "ingredients": ingredients,
+        "count": count,
+        "time": datetime.now().strftime("%H:%M"),
     }
 
-    # Évite les doublons consécutifs
-    if history and history[0]["ingredients"] == ingredients:
+    # Évite doublons
+    if st.session_state[HISTORY_KEY] and \
+       st.session_state[HISTORY_KEY][0]["ingredients"] == ingredients:
         return
 
-    # Ajoute en début de liste
-    history.insert(0, entry)
-
-    # Limite la taille
-    if len(history) > MAX_HISTORY:
-        history = history[:MAX_HISTORY]
-
-    st.session_state[HISTORY_KEY] = history
-
-
-def get_history() -> list[dict[str, Any]]:
-    """Récupère l'historique."""
-    return st.session_state.get(HISTORY_KEY, [])
-
-
-def clear_history() -> None:
-    """Vide l'historique."""
-    st.session_state[HISTORY_KEY] = []
+    st.session_state[HISTORY_KEY].insert(0, entry)
+    st.session_state[HISTORY_KEY] = st.session_state[HISTORY_KEY][:MAX_HISTORY]
 
 
 def display_history_sidebar() -> None:
@@ -62,31 +33,17 @@ def display_history_sidebar() -> None:
     st.sidebar.markdown("---")
     st.sidebar.subheader("🕐 Historique")
 
-    history = get_history()
-
+    history = st.session_state.get(HISTORY_KEY, [])
     if not history:
-        st.sidebar.caption("Aucune recherche récente")
+        st.sidebar.caption("Aucune recherche")
         return
 
-    for entry in history[:5]:  # Affiche les 5 dernières
-        ingredients_str = ", ".join(entry["ingredients"][:3])
-        if len(entry["ingredients"]) > 3:
-            ingredients_str += f" +{len(entry['ingredients']) - 3}"
+    for h in history[:5]:
+        ings = ", ".join(h["ingredients"][:3])
+        if len(h["ingredients"]) > 3:
+            ings += f" +{len(h['ingredients']) - 3}"
 
-        col1, col2 = st.sidebar.columns([4, 1])
-        with col1:
-            if st.button(
-                f"🍳 {ingredients_str} ({entry['results_count']})",
-                key=f"hist_{entry['timestamp']}_{id(entry)}",
-                use_container_width=True,
-            ):
-                st.session_state["ingredients_input"] = ", ".join(entry["ingredients"])
-                st.session_state["trigger_history_submit"] = True
-                st.rerun()
-
-        with col2:
-            st.caption(entry["timestamp"])
-
-    if len(history) > 5 and st.sidebar.button("🗑️ Vider", key="clear_hist"):
-        clear_history()
-        st.rerun()
+        if st.sidebar.button(f"🍳 {ings} ({h['count']})", key=f"hist_{h['time']}"):
+            st.session_state["ingredients_input"] = ", ".join(h["ingredients"])
+            st.session_state["trigger_history_submit"] = True
+            st.rerun()
