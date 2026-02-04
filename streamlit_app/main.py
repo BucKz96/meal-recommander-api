@@ -33,19 +33,8 @@ def fallback_image_url(seed_source: str) -> str:
 
 CUSTOM_CSS = """
 <style>
-    :root {
-        --primary: #1d4ed8;
-        --primary-light: #60a5fa;
-        --accent: #38bdf8;
-        --card-bg: #ffffff;
-        --card-border: #dbeafe;
-        --text-dark: #0f172a;
-        --muted: #64748b;
-        --soft-bg: #eff6ff;
-    }
-
     .stApp {
-        background: radial-gradient(circle at top, #f8fbff 0%, #ecf2ff 55%, #e2e8f0 100%);
+        background: var(--app-background, radial-gradient(circle at top, #f8fbff 0%, #ecf2ff 55%, #e2e8f0 100%));
         min-height: 100vh;
     }
 
@@ -128,7 +117,7 @@ CUSTOM_CSS = """
     .stButton > button {
         background: linear-gradient(120deg, var(--primary), var(--accent));
         border: none;
-        color: #fff;
+        color: var(--button-text, #fff);
         font-weight: 600;
         border-radius: 999px;
         padding: 0.6rem 1.4rem;
@@ -284,7 +273,7 @@ CUSTOM_CSS = """
 
     .card-actions .stButton:last-child > button {
         background: var(--primary);
-        color: #fff;
+        color: var(--button-text, #fff);
         border: none;
         box-shadow: 0 6px 14px rgba(37, 99, 235, 0.25);
     }
