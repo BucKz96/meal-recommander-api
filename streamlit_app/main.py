@@ -9,27 +9,27 @@ This version focuses on a smoother UX:
 
 from __future__ import annotations
 
-import hashlib
-import html
 import os
 from typing import Any
 
 import requests
 import streamlit as st
 
-from favorites import display_favorites, favorite_button
-from history import add_to_history, display_history_sidebar
-from theme import apply_theme, theme_toggle
+from streamlit_app.favorites import display_favorites, favorite_button
+from streamlit_app.history import add_to_history, display_history_sidebar
+from streamlit_app.theme import apply_theme, theme_toggle
+from streamlit_app.utils import (
+    fallback_image_url,
+    format_ingredients_list,
+    safe_html_escape,
+    sanitize_image_url,
+    truncate_text,
+)
 
 API_URL = os.getenv("API_URL", "http://localhost:8000")
 RESULTS_PER_ROW = 3
 API_FETCH_LIMIT = 60
 DEFAULT_INGREDIENTS = "Chicken, Rice, Tomato"
-
-
-def fallback_image_url(seed_source: str) -> str:
-    digest = hashlib.md5(seed_source.encode("utf-8")).hexdigest()[:12]
-    return f"https://picsum.photos/seed/{digest}/400/300"
 
 
 CUSTOM_CSS = """
@@ -86,17 +86,18 @@ CUSTOM_CSS = """
     }
 
     .search-section {
-        max-width: 360px;
-        margin: -60px auto 24px;
+        width: min(520px, 92vw);
+        margin: -70px auto 32px;
+        padding: 0 8px;
         text-align: center;
     }
 
     .search-shell {
         background: var(--card-bg);
-        border-radius: 24px;
+        border-radius: 28px;
         border: 1.5px solid var(--card-border);
-        padding: 20px 22px;
-        box-shadow: 0 30px 60px rgba(15, 23, 42, 0.12);
+        padding: 24px 26px;
+        box-shadow: 0 30px 60px rgba(15, 23, 42, 0.16);
     }
 
     .search-shell .stTextInput > div > div > input {
@@ -104,6 +105,21 @@ CUSTOM_CSS = """
         padding: 0.75rem 1rem;
         border-radius: 14px;
         border: 1px solid var(--card-border);
+        background: var(--soft-bg);
+        color: var(--text-dark);
+        box-shadow: inset 0 1px 3px rgba(15, 23, 42, 0.08);
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .search-shell .stTextInput input::placeholder {
+        color: rgba(100, 116, 139, 0.9);
+        opacity: 1;
+    }
+
+    .search-shell .stTextInput > div > div > input:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        outline: none;
     }
 
     .search-shell .stButton > button {
@@ -145,38 +161,61 @@ CUSTOM_CSS = """
         color: var(--primary);
     }
 
+    .card-shell-marker {
+        display: none;
+    }
+
+    div[data-testid="stVerticalBlock"]:has(.card-shell-marker) {
+        background: var(--card-bg);
+        border-radius: 22px;
+        border: 1.5px solid var(--card-border);
+        box-shadow: 0 16px 28px rgba(15, 23, 42, 0.12);
+        padding: 0;
+        margin-bottom: 24px;
+        overflow: hidden;
+        transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+    }
+
+    div[data-testid="stVerticalBlock"]:has(.card-shell-marker[data-active="true"]) {
+        border-color: var(--primary);
+        box-shadow: 0 30px 50px rgba(37, 99, 235, 0.2);
+    }
+
+    div[data-testid="stVerticalBlock"]:has(.card-shell-marker):hover {
+        transform: translateY(-4px);
+        box-shadow: 0 26px 48px rgba(37, 99, 235, 0.18);
+    }
+
+    div[data-testid="stVerticalBlock"]:has(.card-shell-marker) > div {
+        padding: 0 !important;
+    }
+
+    div[data-testid="stVerticalBlock"]:has(.card-shell-marker) [data-testid="element-container"] {
+        padding: 0 20px;
+        background: transparent;
+    }
+
+    div[data-testid="stVerticalBlock"]:has(.card-shell-marker) [data-testid="element-container"]:first-of-type {
+        padding-top: 20px;
+    }
+
+    div[data-testid="stVerticalBlock"]:has(.card-shell-marker) [data-testid="element-container"]:last-of-type {
+        padding-bottom: 20px;
+    }
+
     .meal-card-wrapper {
-        padding: 16px;
-        display: flex;
-        height: 100%;
+        padding: 0;
     }
 
     .meal-card {
-        background: var(--card-bg);
-        border-radius: 24px;
-        overflow: hidden;
-        border: 1.5px solid var(--card-border);
-        box-shadow: 0 16px 35px rgba(15, 23, 42, 0.12);
-        transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
-        display: flex;
-        flex-direction: column;
-        position: relative;
-        width: 100%;
-    }
-
-    .meal-card--active {
-        border-color: var(--primary);
-        box-shadow: 0 32px 60px rgba(37, 99, 235, 0.25);
-    }
-
-    .meal-card:hover {
-        transform: translateY(-6px);
-        box-shadow: 0 30px 60px rgba(37, 99, 235, 0.2);
+        background: transparent;
+        border: none;
+        box-shadow: none;
     }
 
     .meal-image-container {
         position: relative;
-        height: 200px;
+        height: 190px;
         overflow: hidden;
     }
 
@@ -184,56 +223,55 @@ CUSTOM_CSS = """
         width: 100%;
         height: 100%;
         object-fit: cover;
-        transition: transform 0.4s ease;
+        transition: transform 0.35s ease;
     }
 
     .meal-card:hover .meal-image-container img {
-        transform: scale(1.08);
+        transform: scale(1.05);
     }
 
     .meal-badge {
         position: absolute;
-        top: 16px;
-        left: 16px;
+        top: 14px;
+        left: 14px;
         background: rgba(248, 250, 255, 0.95);
-        padding: 6px 14px;
+        padding: 5px 12px;
         border-radius: 999px;
-        font-size: 0.85rem;
+        font-size: 0.8rem;
         font-weight: 600;
         color: var(--text-dark);
         border: 1px solid var(--card-border);
     }
 
     .meal-content {
-        padding: 20px 22px 0;
+        padding: 18px 20px 16px;
         flex: 1;
         display: flex;
         flex-direction: column;
     }
 
     .meal-title {
-        font-size: 1.15rem;
-        font-weight: 700;
+        font-size: 1.05rem;
+        font-weight: 600;
         color: var(--text-dark);
-        margin-bottom: 10px;
-        line-height: 1.3;
-        min-height: 52px;
+        margin-bottom: 8px;
+        line-height: 1.35;
     }
 
     .meal-meta {
         display: flex;
-        gap: 10px;
+        gap: 8px;
         flex-wrap: wrap;
         color: var(--muted);
-        font-size: 0.9rem;
-        margin-bottom: 12px;
+        font-size: 0.85rem;
+        margin-bottom: 10px;
     }
 
     .ingredients-list {
         display: flex;
         flex-wrap: wrap;
         gap: 6px;
-        margin-bottom: 12px;
+        margin-bottom: 10px;
     }
 
     .ingredient-tag {
@@ -241,42 +279,39 @@ CUSTOM_CSS = """
         color: var(--primary);
         padding: 4px 12px;
         border-radius: 999px;
-        font-size: 0.8rem;
+        font-size: 0.78rem;
         border: 1px solid var(--card-border);
     }
 
-    .card-actions {
-        margin-top: 12px;
-        padding: 12px 18px 18px;
-        display: flex;
-        gap: 10px;
-        background: var(--card-bg);
-        border-top: 1px solid var(--card-border);
+    div[data-testid="stVerticalBlock"]:has(.card-shell-marker) [data-testid="stHorizontalBlock"] {
+        margin: 16px 20px 20px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        background: var(--soft-bg);
+        border: 1px solid var(--card-border);
+        box-shadow: inset 0 1px 3px rgba(15, 23, 42, 0.08);
+        gap: 12px;
+        align-items: center;
     }
 
-    .card-actions .stButton {
+    div[data-testid="stVerticalBlock"]:has(.card-shell-marker) [data-testid="stHorizontalBlock"] > div[data-testid="column"] {
         flex: 1;
     }
 
-    .card-actions .stButton > button {
-        height: 34px;
-        border-radius: 24px;
-        font-size: 0.95rem;
-        padding: 0;
-    }
-
-    .card-actions .stButton:first-child > button {
-        background: #fff;
-        border: 1px solid var(--card-border);
+    div[data-testid="stVerticalBlock"]:has(.card-shell-marker) [data-testid="stHorizontalBlock"] button {
+        width: 100%;
+        border-radius: 14px;
+        font-size: 0.9rem;
+        padding: 0.3rem 0;
+        border: none;
+        background: transparent;
         color: var(--primary);
         box-shadow: none;
+        cursor: pointer;
     }
 
-    .card-actions .stButton:last-child > button {
-        background: var(--primary);
-        color: var(--button-text, #fff);
-        border: none;
-        box-shadow: 0 6px 14px rgba(37, 99, 235, 0.25);
+    div[data-testid="stVerticalBlock"]:has(.card-shell-marker) [data-testid="stHorizontalBlock"] button:last-child {
+        color: var(--text-dark);
     }
 
     .warning-message {
@@ -402,9 +437,6 @@ CUSTOM_CSS = """
         .hero {
             padding: 40px 24px;
         }
-        .meal-card-wrapper {
-            padding: 10px;
-        }
         .details-body {
             grid-template-columns: 1fr;
         }
@@ -421,7 +453,7 @@ CUSTOM_CSS = """
         .meal-title {
             min-height: auto;
         }
-        .card-actions {
+        div[data-testid="stVerticalBlock"]:has(.card-shell-marker) [data-testid="stHorizontalBlock"] {
             flex-direction: column;
         }
     }
@@ -519,59 +551,63 @@ def render_meal_cards(meals: list[dict[str, Any]]) -> None:
 
 def render_meal_card(meal: dict[str, Any], key_suffix: str) -> None:
     meal_name = meal.get("name", "Recipe")
-    meal_name_safe = html.escape(str(meal_name))
+    meal_name_safe = safe_html_escape(meal_name)
     cuisine = meal.get("cuisine", "International")
-    category = meal.get("dish_type") or ""
+    category = meal.get("category") or meal.get("dish_type") or ""
     ingredients = meal.get("ingredients") or []
     if not isinstance(ingredients, list):
         ingredients = []
 
     image_url = sanitize_image(meal.get("image"), fallback_image_url(meal_name))
     fallback = fallback_image_url(f"{meal_name}-fallback")
+    safe_fallback = fallback.replace("'", "\\'")
 
     selected_name = st.session_state.get("selected_meal_name")
+    is_active = bool(selected_name and selected_name == meal_name)
     card_classes = "meal-card"
-    if selected_name and selected_name == meal_name:
+    if is_active:
         card_classes += " meal-card--active"
 
-    card_html_start = [
-        '<div class="meal-card-wrapper">',
-        f'<div class="{card_classes}">',
-        '<div class="meal-image-container">',
-        f'<img src="{image_url}" alt="{meal_name_safe}" onerror="this.onerror=null;this.src=\'{fallback}\';"/>',
-        f'<div class="meal-badge">{html.escape(str(cuisine))}</div>',
-        "</div>",
-        '<div class="meal-content">',
-        f'<div class="meal-title">{meal_name_safe}</div>',
-    ]
-
-    meta_parts = []
+    meta_parts: list[str] = []
     if category:
-        meta_parts.append(html.escape(str(category)))
+        meta_parts.append(safe_html_escape(category))
     if ingredients:
         meta_parts.append(f"{len(ingredients)} ingredients")
-    if meta_parts:
-        card_html_start.append('<div class="meal-meta">' + " · ".join(meta_parts) + "</div>")
+    meta_html = '<div class="meal-meta">' + " · ".join(meta_parts) + "</div>" if meta_parts else ""
 
+    ingredients_html = ""
     if ingredients:
-        card_html_start.append('<div class="ingredients-list">')
-        for ingredient in ingredients[:3]:
-            card_html_start.append(
-                f'<span class="ingredient-tag">{html.escape(str(ingredient))}</span>'
-            )
+        tags = [
+            f'<span class="ingredient-tag">{safe_html_escape(ingredient)}</span>'
+            for ingredient in ingredients[:3]
+        ]
         if len(ingredients) > 3:
-            card_html_start.append(
-                f'<span class="ingredient-tag">+{len(ingredients) - 3} more</span>'
-            )
-        card_html_start.append("</div>")
+            tags.append(f'<span class="ingredient-tag">+{len(ingredients) - 3} more</span>')
+        ingredients_html = '<div class="ingredients-list">' + "".join(tags) + "</div>"
 
-    card_html_start.append("</div>")  # close meal-content
-    card_head = card_html_start + ['<div class="card-actions">']
-    card_tail = "</div></div></div>"
+    marker_html = (
+        f'<span class="card-shell-marker" data-active="{"true" if is_active else "false"}"></span>'
+    )
+    card_html = f"""
+    {marker_html}
+    <div class="meal-card-wrapper">
+        <div class="{card_classes}">
+            <div class="meal-image-container">
+                <img src="{image_url}" alt="{meal_name_safe}" onerror="this.onerror=null;this.src='{safe_fallback}';"/>
+                <div class="meal-badge">{safe_html_escape(cuisine)}</div>
+            </div>
+            <div class="meal-content">
+                <div class="meal-title">{meal_name_safe}</div>
+                {meta_html}
+                {ingredients_html}
+            </div>
+        </div>
+    </div>
+    """.strip()
 
     with st.container():
-        st.markdown("\n".join(card_head), unsafe_allow_html=True)
-        btn_cols = st.columns([6, 4])
+        st.markdown(card_html, unsafe_allow_html=True)
+        btn_cols = st.columns(2, gap="small")
         with btn_cols[0]:
             favorite_button(meal, key_suffix=f"card_{key_suffix}")
         with btn_cols[1]:
@@ -583,18 +619,11 @@ def render_meal_card(meal: dict[str, Any], key_suffix: str) -> None:
             ):
                 st.session_state["selected_meal"] = meal
                 st.session_state["selected_meal_name"] = meal_name
-        st.markdown(card_tail, unsafe_allow_html=True)
 
 
 def sanitize_image(image_value: Any, fallback: str) -> str:
-    if not isinstance(image_value, str) or image_value.lower() == "nan":
-        return fallback
-    url = image_value.strip()
-    if "media-allrecipes.com" in url:
-        return fallback
-    if url.startswith("http://"):
-        url = url.replace("http://", "https://", 1)
-    return url or fallback
+    """Wrapper pour compatibilité, utilise utils.sanitize_image_url."""
+    return sanitize_image_url(image_value, fallback)
 
 
 def render_details_panel() -> None:
@@ -605,11 +634,12 @@ def render_details_panel() -> None:
     meal_name = str(meal.get("name", "Recipe"))
     if not st.session_state.get("selected_meal_name"):
         st.session_state["selected_meal_name"] = meal_name
-    meal_name_safe = html.escape(meal_name)
-    cuisine = html.escape(str(meal.get("cuisine") or "International"))
-    dish_type = html.escape(str(meal.get("dish_type") or ""))
-    diet_type = html.escape(str(meal.get("diet_type") or "Unspecified"))
-    prep_time = html.escape(str(meal.get("prep_time") or "N/A"))
+    meal_name_safe = safe_html_escape(meal_name)
+    cuisine = safe_html_escape(meal.get("cuisine") or "International")
+    dish_type = safe_html_escape(meal.get("dish_type"))
+    category_value = safe_html_escape(meal.get("category"))
+    diet_type = safe_html_escape(meal.get("diet_type") or "Unspecified")
+    prep_time = safe_html_escape(meal.get("prep_time") or "N/A")
     ingredients = meal.get("ingredients") or []
     if not isinstance(ingredients, list):
         ingredients = []
@@ -632,11 +662,13 @@ def render_details_panel() -> None:
         )
 
     ingredient_list = (
-        "".join(f"<li>{html.escape(str(ing))}</li>" for ing in ingredients)
+        "".join(f"<li>{safe_html_escape(ing)}</li>" for ing in ingredients)
         or "<li>Aucun ingrédient listé</li>"
     )
 
     badge_meta = [cuisine]
+    if category_value:
+        badge_meta.append(category_value)
     if dish_type:
         badge_meta.append(dish_type)
     if diet_type:
@@ -674,7 +706,7 @@ def render_details_panel() -> None:
 
     button_cols = st.columns([2, 1])
     with button_cols[0]:
-        favorite_button(meal, key_suffix="details")
+        favorite_button(meal, key_suffix="details", show_label=True)
     with button_cols[1]:
         if st.button("Masquer les détails", use_container_width=True):
             st.session_state["selected_meal"] = None
